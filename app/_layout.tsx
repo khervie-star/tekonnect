@@ -1,37 +1,40 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useEffect } from 'react';
-import 'react-native-reanimated';
+import * as SplashScreen from "expo-splash-screen";
+import "react-native-reanimated";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+import { SessionProvider } from "@/context/ctx";
+import { useFonts } from "@/hooks/useFonts";
+import { ThemeProvider } from "@/themes";
+import { NavigationStructure } from "@/routes";
+import { useOnboardingCheck } from "@/hooks/useOnboardingCheck";
+import { ToastProvider } from "@/utils";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
+const queryClient = new QueryClient();
+
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
+  const fontsLoaded = useFonts();
 
-  useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+  useOnboardingCheck(fontsLoaded);
 
-  if (!loaded) {
+  if (!fontsLoaded) {
     return null;
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-    </ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <SessionProvider>
+        <ThemeProvider>
+          <GestureHandlerRootView>
+            <ToastProvider>
+              <NavigationStructure />
+            </ToastProvider>
+          </GestureHandlerRootView>
+        </ThemeProvider>
+      </SessionProvider>
+    </QueryClientProvider>
   );
 }
